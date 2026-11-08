@@ -208,3 +208,7 @@ button { cursor: pointer; }
 .toast.gone { opacity: 0; }
 @media (prefers-reduced-motion: reduce) { .sheet, .backdrop, .toast { transition: none; } }
 #f-cats { max-height: none; }
+/* Rückfragen: kleine Karte unten statt ganzer Bildschirm */
+.sheet.dialog { top: auto; border-radius: 22px 22px 0 0; }
+.sheet.dialog .sheet-body { padding-top: 18px; }
+.sheet.dialog .sheet-actions { border-top: 0; }

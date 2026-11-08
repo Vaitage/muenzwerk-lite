@@ -29,4 +29,7 @@ savings) are kept as a list, the daily budget is a "pot". Data lives only on the
 - Mobile basics (1.1.1): `touch-action: manipulation` on html (no double-tap zoom, pinch stays), no text selection on
   controls, `:active` feedback, `overscroll-behavior: none`. Double-tap guard in `app.js`: same button twice within
   400 ms and clicks into a sheet within 400 ms after it opened are dropped (keypad excluded); `lockSave(sheet)`.
+- Back button (1.2.0, installed app only, `initBackButton`): a guard history entry catches "back" – closes an open
+  sheet, then goes to the overview, then asks "Close the app?" (`askExit`, small `.sheet.dialog`); back again while
+  asking closes the app. Confirmations use the `dialog` style too.
 - Touch targets ≥ 44 px, text contrast ≥ 4.5:1 (tokens in `styles.css` are checked values from Münzwerk).

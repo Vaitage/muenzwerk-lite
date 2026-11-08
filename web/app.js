@@ -1,7 +1,7 @@
 // Münzwerk Lite – Oberfläche. Alles läuft im Browser, Daten über Store (IndexedDB) auf dem Gerät.
 "use strict";
 
-const APP_VERSION = "1.1.1";
+const APP_VERSION = "1.2.0";
 const $ = (sel, root = document) => root.querySelector(sel);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const money = new Intl.NumberFormat(LOCALE, { style: "currency", currency: "EUR" });
@@ -56,7 +56,7 @@ function openSheet(html, { onClose, actions = "", cls = "" } = {}) {
   const wrap = document.createElement("div");
   wrap.className = "sheet-wrap";
   wrap.innerHTML = `<div class="backdrop" data-close></div><div class="sheet ${cls}" role="dialog" aria-modal="true">
-    <div class="sheet-top"><button class="back" data-close>${icon("chevronLeft")}${t("Zurück")}</button></div>
+    ${cls.includes("dialog") ? "" : `<div class="sheet-top"><button class="back" data-close>${icon("chevronLeft")}${t("Zurück")}</button></div>`}
     <div class="sheet-body">${html}</div>${actions ? `<div class="sheet-actions">${actions}</div>` : ""}</div>`;
   document.body.appendChild(wrap);
   wrap.addEventListener("click", (e) => { if (e.target.closest("[data-close]")) closeSheet(); });
@@ -81,7 +81,7 @@ function toast(msg) {
   setTimeout(() => el.remove(), 2300);
 }
 function confirmSheet(title, text, okLabel, onOk) {
-  const sh = openSheet(`<h3>${esc(title)}</h3><p class="meta">${esc(text)}</p>`, {
+  const sh = openSheet(`<h3>${esc(title)}</h3><p class="meta">${esc(text)}</p>`, { cls: "dialog",
     actions: `<button class="btn secondary" data-close>${t("Abbrechen")}</button><button class="btn danger" id="c-ok">${esc(okLabel)}</button>` });
   $("#c-ok", sh).addEventListener("click", () => { closeSheet(); onOk(); });
 }
@@ -504,6 +504,37 @@ document.addEventListener("change", async (e) => {
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeSheet(); });
 window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); ui.installPrompt = e; if (S) render_(); });
 
+// ------------------------------------------------------------------ Zurück-Taste (Android, installierte App)
+// Ein Wächter-Eintrag im Verlauf fängt „Zurück“ ab: erst offenes Fenster schließen, dann zur Übersicht,
+// dort nachfragen. Im Nachfrage-Fenster schließt ein weiteres „Zurück“ die App (Wächter ist dann weg).
+// Nur in der installierten App – im Browser soll „Zurück“ sich normal verhalten.
+const standalone = () => matchMedia("(display-mode: standalone)").matches || matchMedia("(display-mode: fullscreen)").matches;
+let exitAsking = false;
+function pushGuard() { history.pushState({ guard: 1 }, ""); }
+function askExit() {
+  exitAsking = true;
+  openSheet(`<h3>${t("App schließen?")}</h3><p class="meta">${t("Deine Einträge sind gespeichert.")}</p>`, { cls: "dialog",
+    onClose: () => { if (exitAsking) { exitAsking = false; pushGuard(); } },
+    actions: `<button class="btn secondary" data-close>${t("Abbrechen")}</button><button class="btn" id="x-close">${t("Schließen")}</button>` });
+  $("#x-close").addEventListener("click", () => {
+    exitAsking = false;
+    closeSheet();
+    window.close();                                   // klappt in manchen Android-Versionen
+    setTimeout(() => history.back(), 60);             // sonst: hinter den ersten Eintrag zurück = App zu
+  });
+}
+function initBackButton() {
+  if (!standalone()) return;
+  history.replaceState({ base: 1 }, "");
+  pushGuard();
+  window.addEventListener("popstate", () => {
+    if (exitAsking) return;                           // zweites „Zurück“ während der Frage: App geht zu
+    if ($(".sheet-wrap")) { closeSheet(); return pushGuard(); }
+    if (ui.tab !== "overview") { ui.tab = "overview"; ui.month = thisMonth(); window.scrollTo(0, 0); render_(); return pushGuard(); }
+    askExit();
+  });
+}
+
 async function start() {
   document.documentElement.lang = LANG;
   S = (await Store.load()) || defaultState();
@@ -513,6 +544,7 @@ async function start() {
   $("#add-bar").innerHTML = `<button class="btn add out" data-action="add-expense">${icon("minus")}${t("Ausgabe")}</button>
     <button class="btn add in" data-action="add-income">${icon("plus")}${t("Einnahme")}</button>`;
   render_();
+  initBackButton();
   // Tageswechsel (App bleibt offen): neu rechnen
   let day = todayIso();
   setInterval(() => { if (todayIso() !== day) { day = todayIso(); render_(); } }, 60000);

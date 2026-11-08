@@ -6,7 +6,7 @@
     "Heute verfügbar": "Available today", "Heute": "Today", "{amount}/Tag": "{amount}/day",
     "noch {n} Tag": "{n} day left", "noch {n} Tage": "{n} days left",
     "Ausgabe": "Expense", "Einnahme": "Income", "Speichern": "Save", "Löschen": "Delete", "Abbrechen": "Cancel",
-    "Zurück": "Back", "Kategorie": "Category", "Kategorie (optional)": "Category (optional)", "Datum": "Date", "Notiz": "Note", "optional": "optional",
+    "Zurück": "Back", "Kategorie": "Category", "Kategorie (optional)": "Category (optional)", "App schließen?": "Close the app?", "Deine Einträge sind gespeichert.": "Your entries are saved.", "Schließen": "Close", "Datum": "Date", "Notiz": "Note", "optional": "optional",
     "Betrag": "Amount", "Bitte einen Betrag eingeben.": "Please enter an amount.",
     "Bitte eine Kategorie wählen.": "Please choose a category.",
     "Gespeichert": "Saved", "Gelöscht": "Deleted", "Eintrag löschen?": "Delete entry?",
