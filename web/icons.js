@@ -1,0 +1,77 @@
+// Einfache Strich-Icons (24×24). Schlüssel = Wert in categories.icon.
+window.ICONS = {
+  minus: '<path d="M5 12h14"/>',
+  backspace: '<path d="M21 5H9l-6 7 6 7h12z"/><path d="m12 9 6 6M18 9l-6 6"/>',
+  fuel: '<path d="M4 21V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v16"/><path d="M3 21h13"/><path d="M15 9h2a2 2 0 0 1 2 2v6a1.5 1.5 0 0 0 3 0V8l-3-3"/><path d="M7 8h5"/>',
+  download: '<path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/>',
+  upload: '<path d="M12 20V9"/><path d="m7 14 5-5 5 5"/><path d="M5 4h14"/>',
+  repeat: '<path d="M17 2l3 3-3 3"/><path d="M4 11V9a4 4 0 0 1 4-4h12"/><path d="M7 22l-3-3 3-3"/><path d="M20 13v2a4 4 0 0 1-4 4H4"/>',
+  tag: '<path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9z"/><circle cx="8" cy="8" r="1.5"/>',
+  utensils: '<path d="M6 3v8a2 2 0 0 0 2 2v8"/><path d="M10 3v8a2 2 0 0 1-2 2"/><path d="M8 3v6"/><path d="M17 21V3c-2 1-3 4-3 8h3"/>',
+  home: '<path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-5h4v5"/>',
+  shield: '<path d="M12 3 5 6v5c0 5 3 8 7 10 4-2 7-5 7-10V6z"/>',
+  stethoscope: '<path d="M6 3v6a4 4 0 0 0 8 0V3"/><path d="M10 13v2a5 5 0 0 0 10 0v-2"/><circle cx="20" cy="11" r="2"/>',
+  shirt: '<path d="M8 3 3 6l2 5 3-1v11h8V10l3 1 2-5-5-3a4 4 0 0 1-8 0z"/>',
+  graduation: '<path d="m2 9 10-5 10 5-10 5z"/><path d="M6 11v5c3 2 9 2 12 0v-5"/><path d="M22 9v6"/>',
+  gift: '<rect x="3" y="8" width="18" height="4" rx="1"/><path d="M5 12v9h14v-9"/><path d="M12 8v13"/><path d="M12 8C10 4 6 4 7 7c.5 1 3 1 5 1 2 0 4.5 0 5-1 1-3-3-3-5 1z"/>',
+  paw: '<circle cx="5.5" cy="10" r="2"/><circle cx="9" cy="5.5" r="2"/><circle cx="15" cy="5.5" r="2"/><circle cx="18.5" cy="10" r="2"/><path d="M8 18c0-4 2-6 4-6s4 2 4 6c0 2-2 3-4 2-2 1-4 0-4-2z"/>',
+  smile: '<circle cx="12" cy="12" r="9"/><path d="M8.5 14a4 4 0 0 0 7 0"/><path d="M9 9.5h.01M15 9.5h.01"/>',
+  basket: '<path d="M3 10h18l-2 10H5z"/><path d="m8 10 3-6M16 10l-3-6"/><path d="M9 14v3M12 14v3M15 14v3"/>',
+  car: '<path d="M5 16V11l2-5h10l2 5v5"/><rect x="3" y="11" width="18" height="6" rx="2"/><path d="M6 17v2M18 17v2"/><circle cx="7.5" cy="14" r=".5"/><circle cx="16.5" cy="14" r=".5"/>',
+  plug: '<path d="M9 3v5M15 3v5"/><path d="M6 8h12v3a6 6 0 0 1-12 0z"/><path d="M12 17v4"/>',
+  plane: '<path d="M10 14 3 12l1-2 7 1 4-6c1-1.5 3-1.5 3 0l-2 7 5 3-1 2-6-1-2 6-2-.5z"/>',
+  receipt: '<path d="M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3"/>',
+  laptop: '<rect x="4" y="5" width="16" height="11" rx="1"/><path d="M2 19h20"/>',
+  headphones: '<path d="M4 15v-3a8 8 0 0 1 16 0v3"/><rect x="3" y="14" width="4" height="7" rx="1.5"/><rect x="17" y="14" width="4" height="7" rx="1.5"/>',
+  wallet: '<path d="M19 7V5a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H5a2 2 0 0 1-2-2V6"/><path d="M17 13.5h.01"/>',
+  briefcase: '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/><path d="M3 13h18"/>',
+  undo: '<path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/>',
+  coins: '<ellipse cx="9" cy="7" rx="6" ry="3"/><path d="M3 7v4c0 1.7 2.7 3 6 3s6-1.3 6-3V7"/><path d="M9 14v3c0 1.7 2.7 3 6 3s6-1.3 6-3v-4c0-1.6-2.4-2.9-5.5-3"/>',
+  heart: '<path d="M12 20s-8-5-8-11a4.5 4.5 0 0 1 8-3 4.5 4.5 0 0 1 8 3c0 6-8 11-8 11z"/>',
+  dumbbell: '<path d="M6 7v10M18 7v10M3 10v4M21 10v4M6 12h12"/>',
+  cup: '<path d="M4 8h13v5a6 6 0 0 1-6 6h-1a6 6 0 0 1-6-6z"/><path d="M17 10h1a3 3 0 0 1 0 6h-1.5"/><path d="M8 3v2M12 3v2"/>',
+  wrench: '<path d="M14 6a4 4 0 0 0 5 5l-9 9a2 2 0 0 1-3-3l9-9a4 4 0 0 1-2-2z"/>',
+  piggy: '<path d="M5 11a7 6 0 0 1 12.5-3.5L20 6v4l1 1v3l-2 .5c-.5 1-1.3 1.8-2 2.5V20h-3v-2a8 8 0 0 1-3 0v2H8v-3.2A6 6 0 0 1 5 11z"/><path d="M5 11H3"/><path d="M15.5 10.5h.01"/>',
+  pie: '<path d="M12 3a9 9 0 1 0 9 9h-9z"/><path d="M15 3.5A9 9 0 0 1 20.5 9H15z"/>',
+  trend: '<path d="m3 17 6-6 4 4 8-8"/><path d="M15 7h6v6"/>',
+  search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
+  help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .8-1 1.5v.7"/><path d="M12 17h.01"/>',
+  // Oberfläche
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  chevronLeft: '<path d="m15 18-6-6 6-6"/>',
+  chevronRight: '<path d="m9 18 6-6-6-6"/>',
+  chart: '<path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/>',
+  list: '<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
+  inbox: '<path d="M3 13h5l1 3h6l1-3h5"/><path d="M5 5h14l2 8v6H3v-6z"/>',
+  settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
+  refresh: '<path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/>',
+  bank: '<path d="m3 9 9-5 9 5"/><path d="M5 9v9M9.5 9v9M14.5 9v9M19 9v9M3 20h18"/>',
+  trash: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',
+  check: '<path d="m5 12 5 5 9-10"/>',
+  calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+  phone: '<rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M10.5 18.5h3"/>',
+  alert: '<path d="M12 4 2.5 20h19z"/><path d="M12 10v4M12 17h.01"/>',
+  more: '<circle cx="6" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="18" cy="12" r="1.2"/>',
+  clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+  sparkle: '<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M6 18l2.5-2.5M15.5 8.5 18 6"/>',
+};
+
+window.CATEGORY_ICON_CHOICES = [
+  "tag", "utensils", "home", "shield", "stethoscope", "shirt", "graduation", "gift", "paw",
+  "smile", "basket", "car", "plug", "plane", "receipt", "laptop", "headphones", "wallet",
+  "briefcase", "undo", "coins", "piggy", "heart", "dumbbell", "cup", "wrench", "fuel",
+];
+
+window.icon = (name, cls = "") =>
+  `<svg class="ic ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${window.ICONS[name] || window.ICONS.tag}</svg>`;
+
+// Logo „Prägung mit Riffelrand“: Münze mit geriffeltem Rand (zugleich Zahnrad = Werk),
+// darin „M“ mit zwei Punkten („Mü“). Farbe = currentColor. Der Rand steckt in <g class="logo-gear">,
+// damit er sich beim Entsperren drehen kann (styles.css). Gleiche Form: web/logo.svg, Android-Symbol.
+const LOGO_GEAR = "M45.7 8.7L47.2 3.1L52.8 3.1L54.3 8.7L60 9.7L63.4 5L68.7 6.9L68.2 12.7L73.2 15.6L78 12.3L82.3 15.9L79.9 21.2L83.6 25.6L89.2 24.1L92 29L87.9 33.1L89.9 38.6L95.7 39.1L96.7 44.6L91.4 47.1L91.4 52.9L96.7 55.4L95.7 60.9L89.9 61.4L87.9 66.9L92 71L89.2 75.9L83.6 74.4L79.9 78.8L82.3 84.1L78 87.7L73.2 84.4L68.2 87.3L68.7 93.1L63.4 95L60 90.3L54.3 91.3L52.8 96.9L47.2 96.9L45.7 91.3L40 90.3L36.6 95L31.3 93.1L31.8 87.3L26.8 84.4L22 87.7L17.7 84.1L20.1 78.8L16.4 74.4L10.8 75.9L8 71L12.1 66.9L10.1 61.4L4.3 60.9L3.3 55.4L8.6 52.9L8.6 47.1L3.3 44.6L4.3 39.1L10.1 38.6L12.1 33.1L8 29L10.8 24.1L16.4 25.6L20.1 21.2L17.7 15.9L22 12.3L26.8 15.6L31.8 12.7L31.3 6.9L36.6 5L40 9.7Z";
+window.logoMark = (cls = "", label = "Münzwerk") => `<svg class="logo ${cls}" viewBox="0 0 100 100" role="img" aria-label="${label}">
+  <g class="logo-gear"><path fill="currentColor" fill-rule="evenodd" d="${LOGO_GEAR} M13 50a37 37 0 1 0 74 0a37 37 0 1 0-74 0Z"/></g>
+  <circle cx="50" cy="50" r="31" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".45"/>
+  <path d="M33 68V41L50 58L67 41V68" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="42" cy="27" r="4" fill="currentColor"/><circle cx="58" cy="27" r="4" fill="currentColor"/>
+</svg>`;

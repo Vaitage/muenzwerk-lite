@@ -1,0 +1,19 @@
+{
+  "name": "Münzwerk Lite",
+  "short_name": "Münzwerk Lite",
+  "description": "Haushaltsbuch fürs Handy: Ausgaben eintippen, Tagesbudget als Topf. Läuft offline, Daten bleiben auf dem Gerät.",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#5856d6",
+  "theme_color": "#5856d6",
+  "lang": "de",
+  "categories": ["finance", "productivity"],
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
