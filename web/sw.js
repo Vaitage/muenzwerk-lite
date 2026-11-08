@@ -1,6 +1,6 @@
 // Offline: alle App-Dateien liegen im Cache. Neue Version = neuer Cache-Name (CACHE), alter wird gelöscht.
 // Erst das Netz (damit Updates sofort ankommen), ohne Netz der Cache.
-const CACHE = "muenzwerk-lite-1.0.0";
+const CACHE = "muenzwerk-lite-1.0.1";
 const FILES = ["./", "index.html", "styles.css", "icons.js", "i18n.js", "calc.js", "store.js", "app.js",
   "manifest.webmanifest", "logo.svg", "icon-180.png", "icon-192.png", "icon-512.png"];
 

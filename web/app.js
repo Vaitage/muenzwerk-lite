@@ -1,7 +1,7 @@
 // Münzwerk Lite – Oberfläche. Alles läuft im Browser, Daten über Store (IndexedDB) auf dem Gerät.
 "use strict";
 
-const APP_VERSION = "1.0.0";
+const APP_VERSION = "1.0.1";
 const $ = (sel, root = document) => root.querySelector(sel);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const money = new Intl.NumberFormat(LOCALE, { style: "currency", currency: "EUR" });
@@ -49,12 +49,14 @@ const HUES = { basket: 3, utensils: 5, home: 1, car: 2, fuel: 2, shirt: 5, smile
 const hue = (cat) => (cat && HUES[cat.icon]) ? `hue${HUES[cat.icon]}` : "hue0";
 
 // ------------------------------------------------------------------ Fenster (Sheet) und Hinweise
-function openSheet(html, { onClose } = {}) {
+// Fenster füllt den Bildschirm; „actions“ (Speichern usw.) stehen fest am unteren Rand, der Inhalt scrollt dazwischen
+function openSheet(html, { onClose, actions = "", cls = "" } = {}) {
   closeSheet();
   const wrap = document.createElement("div");
   wrap.className = "sheet-wrap";
-  wrap.innerHTML = `<div class="backdrop" data-close></div><div class="sheet" role="dialog" aria-modal="true">
-    <button class="back" data-close>${icon("chevronLeft")}${t("Zurück")}</button>${html}</div>`;
+  wrap.innerHTML = `<div class="backdrop" data-close></div><div class="sheet ${cls}" role="dialog" aria-modal="true">
+    <div class="sheet-top"><button class="back" data-close>${icon("chevronLeft")}${t("Zurück")}</button></div>
+    <div class="sheet-body">${html}</div>${actions ? `<div class="sheet-actions">${actions}</div>` : ""}</div>`;
   document.body.appendChild(wrap);
   wrap.addEventListener("click", (e) => { if (e.target.closest("[data-close]")) closeSheet(); });
   wrap._onClose = onClose;
@@ -77,9 +79,8 @@ function toast(msg) {
   setTimeout(() => el.remove(), 2300);
 }
 function confirmSheet(title, text, okLabel, onOk) {
-  const sh = openSheet(`<h3>${esc(title)}</h3><p class="meta">${esc(text)}</p>
-    <button class="btn danger block" id="c-ok">${esc(okLabel)}</button>
-    <button class="btn secondary block" data-close>${t("Abbrechen")}</button>`);
+  const sh = openSheet(`<h3>${esc(title)}</h3><p class="meta">${esc(text)}</p>`, {
+    actions: `<button class="btn secondary" data-close>${t("Abbrechen")}</button><button class="btn danger" id="c-ok">${esc(okLabel)}</button>` });
   $("#c-ok", sh).addEventListener("click", () => { closeSheet(); onOk(); });
 }
 
@@ -252,9 +253,9 @@ function openEntrySheet(kind, entry = null) {
       <label class="field"><span>${t("Notiz")}</span><input type="text" id="e-note" maxlength="60" placeholder="${t("optional")}" value="${esc(entry ? entry.note || "" : "")}"></label>
     </div>
     <div class="keypad">${["1", "2", "3", "4", "5", "6", "7", "8", "9", ",", "0", "⌫"].map((k) =>
-      `<button data-key="${k}" ${k === "⌫" ? `aria-label="⌫"` : k === "," ? `aria-label="${t("Komma")}"` : ""}>${k === "⌫" ? icon("backspace") : k}</button>`).join("")}</div>
-    <button class="btn block" id="e-save">${t("Speichern")}</button>
-    ${entry ? `<button class="btn secondary danger-text block" id="e-del">${icon("trash")}${t("Löschen")}</button>` : ""}`);
+      `<button data-key="${k}" ${k === "⌫" ? `aria-label="⌫"` : k === "," ? `aria-label="${t("Komma")}"` : ""}>${k === "⌫" ? icon("backspace") : k}</button>`).join("")}</div>`, {
+    cls: "entry-sheet",
+    actions: `${entry ? `<button class="btn secondary danger-text icon-only" id="e-del" aria-label="${t("Löschen")}">${icon("trash")}</button>` : ""}<button class="btn" id="e-save">${t("Speichern")}</button>` });
   const render = () => {
     sheet.querySelectorAll("[data-sign]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.sign === sign));
     const v = L.parseAmount(amount || "0") || 0;
@@ -309,9 +310,8 @@ function openFixedSheet(fx = null) {
       <label class="field"><span>${t("Betrag")}</span><input type="text" inputmode="decimal" id="f-amount" value="${fx ? (Math.abs(fx.amount_cents) / 100).toLocaleString(LOCALE, { minimumFractionDigits: 2 }) : ""}" placeholder="0,00"></label>
       <label class="field"><span>${t("Tag im Monat")}</span><input type="number" inputmode="numeric" min="1" max="31" id="f-day" value="${fx && fx.day ? fx.day : ""}" placeholder="1"></label>
     </div>
-    ${fx ? `<label class="check"><input type="checkbox" id="f-active" ${fx.active !== false ? "checked" : ""}> ${t("Aktiv")}</label>` : ""}
-    <button class="btn block" id="f-save">${t("Speichern")}</button>
-    ${fx ? `<button class="btn secondary danger-text block" id="f-del">${icon("trash")}${t("Löschen")}</button>` : ""}`);
+    ${fx ? `<label class="check"><input type="checkbox" id="f-active" ${fx.active !== false ? "checked" : ""}> ${t("Aktiv")}</label>` : ""}`, {
+    actions: `${fx ? `<button class="btn secondary danger-text icon-only" id="f-del" aria-label="${t("Löschen")}">${icon("trash")}</button>` : ""}<button class="btn" id="f-save">${t("Speichern")}</button>` });
   const mark = () => sheet.querySelectorAll("[data-fkind]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.fkind === kind));
   mark();
   sheet.addEventListener("click", (e) => {
@@ -342,9 +342,8 @@ function openCategorySheet(cat = null) {
   const sheet = openSheet(`<h3>${t("Kategorie")}</h3>
     <div class="seg" role="group">${["expense", "income"].map((k) => `<button data-ckind="${k}">${t(k === "income" ? "Einnahme" : "Ausgabe")}</button>`).join("")}</div>
     <label class="field"><span>${t("Name")}</span><input type="text" id="k-name" maxlength="40" value="${esc(cat ? cat.name : "")}"></label>
-    <div class="field"><span>${t("Symbol")}</span><div class="icon-pick">${CATEGORY_ICON_CHOICES.map((i) => `<button data-icon="${i}" aria-label="${i}">${icon(i)}</button>`).join("")}</div></div>
-    <button class="btn block" id="k-save">${t("Speichern")}</button>
-    ${cat ? `<button class="btn secondary danger-text block" id="k-del">${icon("trash")}${t("Löschen")}</button>` : ""}`);
+    <div class="field"><span>${t("Symbol")}</span><div class="icon-pick">${CATEGORY_ICON_CHOICES.map((i) => `<button data-icon="${i}" aria-label="${i}">${icon(i)}</button>`).join("")}</div></div>`, {
+    actions: `${cat ? `<button class="btn secondary danger-text icon-only" id="k-del" aria-label="${t("Löschen")}">${icon("trash")}</button>` : ""}<button class="btn" id="k-save">${t("Speichern")}</button>` });
   const mark = () => {
     sheet.querySelectorAll("[data-icon]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.icon === chosen));
     sheet.querySelectorAll("[data-ckind]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.ckind === kind));
