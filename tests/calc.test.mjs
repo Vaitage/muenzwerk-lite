@@ -87,3 +87,13 @@ test("Sicherung prüfen", () => {
   assert.equal(L.validState(base()), true);
   assert.equal(L.validState({ entries: [] }), false);
 });
+
+test("Fixkosten mit Kategorie zählen unter „Nach Kategorie“ mit", () => {
+  const s = { entries: [{ id: "e1", date: "2026-11-03", amount_cents: -5000, category_id: "home" }],
+    categories: [], settings: {},
+    fixed: [{ id: "f1", name: "Miete", kind: "expense", amount_cents: 100000, day: 1, category_id: "home" },
+            { id: "f2", name: "Handy", kind: "expense", amount_cents: 2000, day: 5 }] };
+  const r = L.month(s, "2026-11", "2026-11-08");
+  assert.deepEqual(r.categories, [{ id: "home", total: 105000 }]);
+  assert.equal(r.fixedCosts, 102000);
+});

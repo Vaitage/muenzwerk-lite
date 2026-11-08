@@ -197,3 +197,4 @@ button { cursor: pointer; }
   padding: 10px 16px; border-radius: 12px; font-size: 15px; z-index: 30; transition: opacity .4s; max-width: 90vw; }
 .toast.gone { opacity: 0; }
 @media (prefers-reduced-motion: reduce) { .sheet, .backdrop, .toast { transition: none; } }
+#f-cats { max-height: none; }

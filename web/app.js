@@ -1,7 +1,7 @@
 // Münzwerk Lite – Oberfläche. Alles läuft im Browser, Daten über Store (IndexedDB) auf dem Gerät.
 "use strict";
 
-const APP_VERSION = "1.0.1";
+const APP_VERSION = "1.1.0";
 const $ = (sel, root = document) => root.querySelector(sel);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const money = new Intl.NumberFormat(LOCALE, { style: "currency", currency: "EUR" });
@@ -203,10 +203,10 @@ function viewStats() {
 const KIND_LABEL = { income: "Regelmäßige Einnahme", expense: "Fixkosten", saving: "Sparen" };
 function viewSettings() {
   const group = (kind) => S.fixed.filter((f) => f.kind === kind).sort((a, b) => (a.day || 0) - (b.day || 0));
-  const fixedRow = (f) => `<button class="entry" data-fixed="${esc(f.id)}">
-    <span class="bubble ${f.kind === "income" ? "hue6" : f.kind === "saving" ? "hue7" : "hue2"}">${icon(f.kind === "income" ? "briefcase" : f.kind === "saving" ? "piggy" : "repeat")}</span>
-    <span class="grow"><b>${esc(f.name)}</b><small>${f.day ? t("am {day}.", { day: f.day }) : ""}${f.active === false ? " · —" : ""}</small></span>
-    <b class="amt ${f.kind === "income" ? "pos" : ""}">${f.kind === "income" ? "+" : "−"}${fmt(Math.abs(f.amount_cents)).replace("−", "")}</b></button>`;
+  const fixedRow = (f) => { const c = f.kind !== "saving" && f.category_id ? catById(f.category_id) : null; return `<button class="entry" data-fixed="${esc(f.id)}">
+    ${c ? `<span class="bubble ${hue(c)}">${icon(c.icon)}</span>` : `<span class="bubble ${f.kind === "income" ? "hue6" : f.kind === "saving" ? "hue7" : "hue2"}">${icon(f.kind === "income" ? "briefcase" : f.kind === "saving" ? "piggy" : "repeat")}</span>`}
+    <span class="grow"><b>${esc(f.name)}</b><small>${f.day ? t("am {day}.", { day: f.day }) : ""}${c ? ` · ${esc(c.name)}` : ""}${f.active === false ? " · —" : ""}</small></span>
+    <b class="amt ${f.kind === "income" ? "pos" : ""}">${f.kind === "income" ? "+" : "−"}${fmt(Math.abs(f.amount_cents)).replace("−", "")}</b></button>`; };
   const sections = ["income", "expense", "saving"].map((k) => {
     const g = group(k);
     return g.length ? `<h3 class="sub-h">${t(KIND_LABEL[k])}</h3>${g.map(fixedRow).join("")}` : "";
@@ -303,6 +303,7 @@ function openEntrySheet(kind, entry = null) {
 // ------------------------------------------------------------------ Feste Posten
 function openFixedSheet(fx = null) {
   let kind = fx ? fx.kind : "expense";
+  let catId = fx ? fx.category_id || null : null;
   const sheet = openSheet(`<h3>${t("Fester Posten")}</h3>
     <div class="seg" role="group" aria-label="${t("Art")}">${["income", "expense", "saving"].map((k) => `<button data-fkind="${k}">${t(k === "income" ? "Einnahme" : KIND_LABEL[k])}</button>`).join("")}</div>
     <label class="field"><span>${t("Name")}</span><input type="text" id="f-name" maxlength="60" value="${esc(fx ? fx.name : "")}" placeholder="${t("Miete")}"></label>
@@ -310,13 +311,24 @@ function openFixedSheet(fx = null) {
       <label class="field"><span>${t("Betrag")}</span><input type="text" inputmode="decimal" id="f-amount" value="${fx ? (Math.abs(fx.amount_cents) / 100).toLocaleString(LOCALE, { minimumFractionDigits: 2 }) : ""}" placeholder="0,00"></label>
       <label class="field"><span>${t("Tag im Monat")}</span><input type="number" inputmode="numeric" min="1" max="31" id="f-day" value="${fx && fx.day ? fx.day : ""}" placeholder="1"></label>
     </div>
+    <div class="field" id="f-catfield"><span>${t("Kategorie (optional)")}</span><div class="cat-grid" id="f-cats"></div></div>
     ${fx ? `<label class="check"><input type="checkbox" id="f-active" ${fx.active !== false ? "checked" : ""}> ${t("Aktiv")}</label>` : ""}`, {
     actions: `${fx ? `<button class="btn secondary danger-text icon-only" id="f-del" aria-label="${t("Löschen")}">${icon("trash")}</button>` : ""}<button class="btn" id="f-save">${t("Speichern")}</button>` });
-  const mark = () => sheet.querySelectorAll("[data-fkind]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.fkind === kind));
+  // Kategorie passend zur Art (Sparen hat keine); nochmal antippen = keine Kategorie
+  const mark = () => {
+    sheet.querySelectorAll("[data-fkind]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.fkind === kind));
+    const cats = kind === "saving" ? [] : S.categories.filter((c) => c.kind === kind);
+    if (catId && !cats.some((c) => c.id === catId)) catId = null;
+    $("#f-catfield", sheet).hidden = !cats.length;
+    $("#f-cats", sheet).innerHTML = cats.map((c) => `<button data-fcat="${esc(c.id)}" aria-pressed="${c.id === catId}">
+      <span class="bubble ${hue(c)}">${icon(c.icon)}</span><small>${esc(c.name)}</small></button>`).join("");
+  };
   mark();
   sheet.addEventListener("click", (e) => {
     const kb = e.target.closest("[data-fkind]");
     if (kb) { kind = kb.dataset.fkind; mark(); return; }
+    const cb = e.target.closest("[data-fcat]");
+    if (cb) { catId = catId === cb.dataset.fcat ? null : cb.dataset.fcat; mark(); return; }
     if (e.target.closest("#f-del")) {
       confirmSheet(t("Posten löschen?"), fx.name, t("Löschen"), async () => { S.fixed = S.fixed.filter((x) => x.id !== fx.id); await save(); toast(t("Gelöscht")); render_(); });
       return;
@@ -327,7 +339,7 @@ function openFixedSheet(fx = null) {
     const day = Math.min(31, Math.max(1, Number($("#f-day", sheet).value) || 1));
     if (!name) { toast(t("Bitte einen Namen eingeben.")); return $("#f-name", sheet).focus(); }
     if (!v) { toast(t("Bitte einen Betrag eingeben.")); return $("#f-amount", sheet).focus(); }
-    const data = { name, kind, amount_cents: v, day, active: fx ? $("#f-active", sheet).checked : true };
+    const data = { name, kind, amount_cents: v, day, category_id: catId, active: fx ? $("#f-active", sheet).checked : true };
     if (fx) Object.assign(S.fixed.find((x) => x.id === fx.id), data);
     else S.fixed.push({ id: uid(), ...data });
     S.settings.onboarded = true;
@@ -359,6 +371,7 @@ function openCategorySheet(cat = null) {
         S.categories = S.categories.filter((c) => c.id !== cat.id);
         const other = S.categories.find((c) => c.kind === cat.kind && (c.icon === "tag" || c.icon === "coins")) || S.categories.find((c) => c.kind === cat.kind);
         S.entries.forEach((x) => { if (x.category_id === cat.id) x.category_id = other ? other.id : null; });
+        S.fixed.forEach((f) => { if (f.category_id === cat.id) f.category_id = null; });
         await save(); toast(t("Gelöscht")); render_();
       });
       return;

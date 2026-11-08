@@ -66,6 +66,8 @@
     // Ausgaben nach Kategorie (größte zuerst)
     const byCat = new Map();
     for (const e of entries) if (e.amount_cents < 0) byCat.set(e.category_id, (byCat.get(e.category_id) || 0) - e.amount_cents);
+    // Fixkosten mit Kategorie zählen dort mit (ohne Kategorie stehen sie nur unter „Fixkosten“)
+    for (const f of fixed) if (f.kind === "expense" && f.category_id) byCat.set(f.category_id, (byCat.get(f.category_id) || 0) + Math.abs(f.amount_cents));
     const categories = [...byCat.entries()].map(([id, total]) => ({ id, total })).sort((a, b) => b.total - a.total);
 
     return {

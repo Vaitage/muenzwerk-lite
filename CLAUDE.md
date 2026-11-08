@@ -17,6 +17,8 @@ savings) are kept as a list, the daily budget is a "pot". Data lives only on the
 - Daily amount (pot) = (income − fixed costs − savings) ÷ days in month; income = recurring income + entered income.
 - Available on day d = daily amount × d − everything spent this month (can be negative).
 - "Spread" mode: left until month end ÷ remaining days (incl. today).
+- Fixed items may have an optional `category_id` (income/expense, not savings); fixed expenses with a category
+  also count under "by category" in the statistics.
 - Large expenses (≥ `settings.large_cents`, default €250) count fully but are not extrapolated in the forecast.
 
 ## Workflow
