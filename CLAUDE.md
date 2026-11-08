@@ -26,4 +26,7 @@ savings) are kept as a list, the daily budget is a "pot". Data lives only on the
 - README images: `python tools/screenshots.py de|en` (made-up data, fixed date 17 Nov 2026).
 - Push to `main` → GitHub Action runs tests and deploys `web/` to Pages (https://vaitage.github.io/muenzwerk-lite/).
 - Code comments mostly German; commit messages English. Demo/test data stays made up – never real account data.
+- Mobile basics (1.1.1): `touch-action: manipulation` on html (no double-tap zoom, pinch stays), no text selection on
+  controls, `:active` feedback, `overscroll-behavior: none`. Double-tap guard in `app.js`: same button twice within
+  400 ms and clicks into a sheet within 400 ms after it opened are dropped (keypad excluded); `lockSave(sheet)`.
 - Touch targets ≥ 44 px, text contrast ≥ 4.5:1 (tokens in `styles.css` are checked values from Münzwerk).

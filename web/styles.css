@@ -22,9 +22,19 @@
   }
 }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-html { -webkit-text-size-adjust: 100%; }
+/* Handy-Grundlagen: kein Doppeltipp-Zoom (Zwei-Finger-Zoom bleibt), kein Ziehen-zum-Neuladen/Gummiband der ganzen Seite */
+html { -webkit-text-size-adjust: 100%; touch-action: manipulation; overscroll-behavior: none; }
 body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", system-ui, sans-serif; overscroll-behavior-y: none; }
 button, input { font: inherit; color: inherit; }
+/* Bedienelemente: kein Markieren/Kopier-Menü bei langem Drücken oder Doppeltipp; Inhalte (Notizen, Zahlen in Listen) bleiben kopierbar */
+button, a, [role="button"], .tabbar, .seg, .keypad, .amount-display, .hero, .days {
+  -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: manipulation; }
+/* Rückmeldung sofort beim Aufsetzen des Fingers (nicht erst beim Loslassen) */
+button { transition: transform .1s ease-out, opacity .1s ease-out, background-color .1s ease-out; }
+button:active:not(:disabled) { opacity: .7; }
+.btn:active:not(:disabled), .chip:active, .cat-grid button:active, .icon-pick button:active, .keypad button:active { transform: scale(.97); }
+button:disabled { opacity: .5; }
+@media (prefers-reduced-motion: reduce) { button { transition: none; } .btn:active, .chip:active, .cat-grid button:active, .icon-pick button:active, .keypad button:active { transform: none; } }
 button { cursor: pointer; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -189,7 +199,7 @@ button { cursor: pointer; }
 .cat-grid button[aria-pressed="true"] small { color: var(--text); font-weight: 600; }
 .keypad { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
 .keypad button { min-height: 52px; border: 0; border-radius: 12px; background: var(--surface); font-size: 22px; font-weight: 500; display: grid; place-items: center; }
-.keypad button:active { background: var(--surface-2); }
+.keypad button:active { background: var(--surface-2); opacity: 1; }
 .icon-pick { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
 .icon-pick button { min-height: 48px; border: 0; border-radius: 12px; background: var(--surface); display: grid; place-items: center; }
 .icon-pick button[aria-pressed="true"] { box-shadow: inset 0 0 0 2px var(--accent); color: var(--accent); }

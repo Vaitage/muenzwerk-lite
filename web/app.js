@@ -1,7 +1,7 @@
 // Münzwerk Lite – Oberfläche. Alles läuft im Browser, Daten über Store (IndexedDB) auf dem Gerät.
 "use strict";
 
-const APP_VERSION = "1.1.0";
+const APP_VERSION = "1.1.1";
 const $ = (sel, root = document) => root.querySelector(sel);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const money = new Intl.NumberFormat(LOCALE, { style: "currency", currency: "EUR" });
@@ -41,6 +41,7 @@ function defaultState() {
 }
 
 let S = null;                          // Daten
+let sheetOpenedAt = -1e9;              // für die Doppeltipp-Sperre (unten)
 const ui = { tab: "overview", month: thisMonth(), installPrompt: null };
 const save = () => Store.save(S);
 const catById = (id) => S.categories.find((c) => c.id === id);
@@ -60,6 +61,7 @@ function openSheet(html, { onClose, actions = "", cls = "" } = {}) {
   document.body.appendChild(wrap);
   wrap.addEventListener("click", (e) => { if (e.target.closest("[data-close]")) closeSheet(); });
   wrap._onClose = onClose;
+  sheetOpenedAt = performance.now();
   requestAnimationFrame(() => wrap.classList.add("open"));
   return $(".sheet", wrap);
 }
@@ -293,11 +295,20 @@ function openEntrySheet(kind, entry = null) {
       if (!v) { toast(t("Bitte einen Betrag eingeben.")); return; }
       if (!catId) { toast(t("Bitte eine Kategorie wählen.")); return; }
       const data = { date: $("#e-date", sheet).value || todayIso(), amount_cents: sign === "income" ? v : -v, category_id: catId, note: $("#e-note", sheet).value.trim() };
+      if (!lockSave(sheet)) return;
       if (entry) Object.assign(S.entries.find((x) => x.id === entry.id), data);
       else S.entries.push({ id: uid(), ...data });
       save().then(() => { closeSheet(); toast(t("Gespeichert")); render_(); });
     }
   });
+}
+
+// Speichern nur einmal je Fenster: Knöpfe unten sperren, bis das Fenster zu ist
+function lockSave(sheet) {
+  if (sheet.dataset.saving) return false;
+  sheet.dataset.saving = "1";
+  sheet.querySelectorAll(".sheet-actions button").forEach((b) => { b.disabled = true; });
+  return true;
 }
 
 // ------------------------------------------------------------------ Feste Posten
@@ -340,6 +351,7 @@ function openFixedSheet(fx = null) {
     if (!name) { toast(t("Bitte einen Namen eingeben.")); return $("#f-name", sheet).focus(); }
     if (!v) { toast(t("Bitte einen Betrag eingeben.")); return $("#f-amount", sheet).focus(); }
     const data = { name, kind, amount_cents: v, day, category_id: catId, active: fx ? $("#f-active", sheet).checked : true };
+    if (!lockSave(sheet)) return;
     if (fx) Object.assign(S.fixed.find((x) => x.id === fx.id), data);
     else S.fixed.push({ id: uid(), ...data });
     S.settings.onboarded = true;
@@ -379,6 +391,7 @@ function openCategorySheet(cat = null) {
     if (!e.target.closest("#k-save")) return;
     const name = $("#k-name", sheet).value.trim();
     if (!name) { toast(t("Bitte einen Namen eingeben.")); return; }
+    if (!lockSave(sheet)) return;
     if (cat) Object.assign(S.categories.find((c) => c.id === cat.id), { name, icon: chosen, kind });
     else S.categories.push({ id: uid(), name, icon: chosen, kind });
     save().then(() => { closeSheet(); toast(t("Gespeichert")); render_(); });
@@ -431,6 +444,21 @@ function render_() {
   $("#tabbar").innerHTML = TABS.map(([id, ic, label]) => `<button data-tab="${id}" aria-current="${ui.tab === id ? "page" : "false"}">${icon(ic)}<span>${t(label)}</span></button>`).join("");
   $("#add-bar").hidden = ui.tab === "settings";
 }
+
+// Doppeltipp/Doppelklick: zweiter Klick auf denselben Knopf innerhalb von 400 ms wird verworfen
+// (sonst z. B. zweimal gespeichert oder Fenster zweimal geöffnet). Das Tastenfeld ist ausgenommen – „11“ muss gehen.
+// Ebenso Klicks direkt nach dem Öffnen eines Fensters: der zweite Tipp eines Doppeltipps landet sonst auf dem
+// Hintergrund (Fenster fährt noch hoch) und schließt es gleich wieder.
+let lastTap = { el: null, at: 0 };
+document.addEventListener("click", (e) => {
+  const now = performance.now();
+  if (now - sheetOpenedAt < 400 && e.target.closest(".sheet-wrap")) { e.preventDefault(); e.stopImmediatePropagation(); return; }
+  const el = e.target.closest("button, a, [role=button]");
+  if (!el || el.matches("[data-key]")) return;
+  if (lastTap.el === el && now - lastTap.at < 400) { e.preventDefault(); e.stopImmediatePropagation(); return; }
+  lastTap = { el, at: now };
+}, true);
+document.addEventListener("dblclick", (e) => e.preventDefault(), { passive: false });
 
 document.addEventListener("click", async (e) => {
   if (e.target.closest(".sheet-wrap")) return;
