@@ -45,7 +45,7 @@
     "App installieren": "Install app", "Leg Münzwerk Lite auf den Startbildschirm – dann läuft es wie eine App, auch offline.": "Add Münzwerk Lite to your home screen – it then works like an app, even offline.",
     "Installieren": "Install", "Über Münzwerk Lite": "About Münzwerk Lite",
     "Haushaltsbuch fürs Handy: Ausgaben eintippen, Tagesbudget als Topf. Läuft offline, deine Daten verlassen das Gerät nicht.": "Budget book for your phone: type in expenses, daily budget as a pot. Works offline, your data never leaves the device.",
-    "Version {v} · Freie Software (AGPL-3.0) · ohne Gewähr": "Version {v} · Free software (AGPL-3.0) · no warranty",
+    "Version": "Version", "Freie Software (AGPL-3.0) · ohne Gewähr": "Free software (AGPL-3.0) · no warranty",
     "Quellcode auf GitHub": "Source code on GitHub",
     "Los geht's": "Let's start", "Willkommen bei Münzwerk Lite": "Welcome to Münzwerk Lite",
     "Trag zuerst ein, was jeden Monat fest kommt und geht: Gehalt, Miete, Versicherungen, Sparen. Daraus rechnet die App dein Tagesbudget.": "First enter what comes and goes every month: salary, rent, insurance, savings. The app uses this to work out your daily budget.",

@@ -1,7 +1,7 @@
 // Münzwerk Lite – Oberfläche. Alles läuft im Browser, Daten über Store (IndexedDB) auf dem Gerät.
 "use strict";
 
-const APP_VERSION = "1.2.0";
+const APP_VERSION = "1.2.1";
 const $ = (sel, root = document) => root.querySelector(sel);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const money = new Intl.NumberFormat(LOCALE, { style: "currency", currency: "EUR" });
@@ -237,7 +237,8 @@ function viewSettings() {
   <section class="card"><h2>${t("Sprache")}</h2>${seg("lang", lang, [["auto", t("Wie das Gerät")], ["de", "Deutsch"], ["en", "English"]])}</section>
   <section class="card about"><div class="about-logo">${logoMark("", "Münzwerk Lite")}</div><h2>${t("Über Münzwerk Lite")}</h2>
     <p class="meta">${t("Haushaltsbuch fürs Handy: Ausgaben eintippen, Tagesbudget als Topf. Läuft offline, deine Daten verlassen das Gerät nicht.")}</p>
-    <p class="meta">${t("Version {v} · Freie Software (AGPL-3.0) · ohne Gewähr", { v: APP_VERSION })}</p>
+    <div class="version-row"><span>${t("Version")}</span><b>${APP_VERSION}</b></div>
+    <p class="meta">${t("Freie Software (AGPL-3.0) · ohne Gewähr")}</p>
     <a class="link" href="https://github.com/Vaitage/muenzwerk-lite" target="_blank" rel="noopener">${t("Quellcode auf GitHub")}</a></section>`;
 }
 

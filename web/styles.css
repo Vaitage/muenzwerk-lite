@@ -208,6 +208,9 @@ button { cursor: pointer; }
 .toast.gone { opacity: 0; }
 @media (prefers-reduced-motion: reduce) { .sheet, .backdrop, .toast { transition: none; } }
 #f-cats { max-height: none; }
+.version-row { display: flex; justify-content: space-between; align-items: center; min-height: 44px; margin: 4px 0;
+  padding: 0 14px; border-radius: 12px; background: var(--surface-2); }
+.version-row b { font-variant-numeric: tabular-nums; }
 /* Rückfragen: kleine Karte unten statt ganzer Bildschirm */
 .sheet.dialog { top: auto; border-radius: 22px 22px 0 0; }
 .sheet.dialog .sheet-body { padding-top: 18px; }
