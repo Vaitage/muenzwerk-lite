@@ -19,6 +19,9 @@ savings) are kept as a list, the daily budget is a "pot". Data lives only on the
 - "Spread" mode: left until month end ÷ remaining days (incl. today).
 - Fixed items may have an optional `category_id` (income/expense, not savings); fixed expenses with a category
   also count under "by category" in the statistics.
+- Next month (1.3.0): income categories with `next_month` (default: salary, side job) count for the next month when
+  the entry's day ≥ `settings.shift_day` (default 15) – `L.budgetMonth(entry, state)`, like Münzwerk. Fixed items are
+  not shifted. Old data without `shift_day` gets `next_month` on categories named Gehalt/Nebenjob/Lohn once.
 - Large expenses (≥ `settings.large_cents`, default €250) count fully but are not extrapolated in the forecast.
 
 ## Workflow

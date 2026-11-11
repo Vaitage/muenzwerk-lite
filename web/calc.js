@@ -13,6 +13,16 @@
     return `${y + Math.floor(mo / 12)}-${pad(((mo % 12) + 12) % 12 + 1)}`;
   };
 
+  // Zu welchem Monat zählt ein Eintrag? Einnahmen einer Kategorie mit „Folgemonat“ (Gehalt, Nebenjob), die ab dem
+  // Stichtag (settings.shift_day, Standard 15) kommen, zählen zum nächsten Monat – wie in Münzwerk.
+  function budgetMonth(e, state) {
+    const m = monthOf(e.date);
+    if (!(e.amount_cents > 0) || !e.category_id) return m;
+    const c = (state.categories || []).find((x) => x.id === e.category_id);
+    const from = state.settings?.shift_day ?? 15;
+    return c && c.next_month && Number(e.date.slice(8, 10)) >= from ? addMonths(m, 1) : m;
+  }
+
   // Gilt ein fester Posten in Monat m? (optional erst ab start_month, nur bis end_month)
   const fixedActive = (f, m) => f.active !== false && (!f.start_month || f.start_month <= m) && (!f.end_month || f.end_month >= m);
 
@@ -33,7 +43,7 @@
     const fixedCosts = sumKind("expense");
     const savings = sumKind("saving");
 
-    const entries = (state.entries || []).filter((e) => monthOf(e.date) === m);
+    const entries = (state.entries || []).filter((e) => budgetMonth(e, state) === m);
     let incomeVariable = 0, variable = 0, largeSum = 0;
     for (const e of entries) {
       if (e.amount_cents > 0) incomeVariable += e.amount_cents;
@@ -93,7 +103,7 @@
     return !!s && typeof s === "object" && Array.isArray(s.entries) && Array.isArray(s.categories) && Array.isArray(s.fixed);
   }
 
-  const L = { pad, daysIn, isoOf, monthOf, addMonths, fixedActive, month, parseAmount, validState };
+  const L = { pad, daysIn, isoOf, monthOf, addMonths, fixedActive, budgetMonth, month, parseAmount, validState };
   if (typeof module !== "undefined" && module.exports) module.exports = L;
   else root.L = L;
 })(typeof window !== "undefined" ? window : globalThis);

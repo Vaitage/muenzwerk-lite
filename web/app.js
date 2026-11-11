@@ -1,7 +1,7 @@
 // Münzwerk Lite – Oberfläche. Alles läuft im Browser, Daten über Store (IndexedDB) auf dem Gerät.
 "use strict";
 
-const APP_VERSION = "1.2.1";
+const APP_VERSION = "1.3.0";
 const $ = (sel, root = document) => root.querySelector(sel);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const money = new Intl.NumberFormat(LOCALE, { style: "currency", currency: "EUR" });
@@ -22,7 +22,7 @@ const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 
 
 // ------------------------------------------------------------------ Grundzustand
 function defaultState() {
-  const c = (name, icon, kind) => ({ id: uid(), name: t(name), icon, kind });
+  const c = (name, icon, kind, next_month = false) => ({ id: uid(), name: t(name), icon, kind, ...(next_month ? { next_month } : {}) });
   return {
     version: 1,
     categories: [
@@ -31,12 +31,12 @@ function defaultState() {
       c("Freizeit", "smile", "expense"), c("Gesundheit", "stethoscope", "expense"), c("Geschenke", "gift", "expense"),
       c("Urlaub", "plane", "expense"), c("Kaffee", "cup", "expense"), c("Haustier", "paw", "expense"),
       c("Bildung", "graduation", "expense"), c("Sonstiges", "tag", "expense"),
-      c("Gehalt", "briefcase", "income"), c("Nebenjob", "wallet", "income"), c("Geschenk", "gift", "income"),
+      c("Gehalt", "briefcase", "income", true), c("Nebenjob", "wallet", "income", true), c("Geschenk", "gift", "income"),
       c("Erstattung", "undo", "income"), c("Sonstiges", "coins", "income"),
     ],
     entries: [],
     fixed: [],
-    settings: { daily_mode: "pot", large_cents: 25000, last_backup: null, onboarded: false },
+    settings: { daily_mode: "pot", large_cents: 25000, shift_day: 15, last_backup: null, onboarded: false },
   };
 }
 
@@ -148,7 +148,7 @@ function entryRow(e) {
   const c = catById(e.category_id);
   return `<button class="entry" data-entry="${esc(e.id)}">
     <span class="bubble ${hue(c)}">${icon(c ? c.icon : "tag")}</span>
-    <span class="grow"><b>${esc(e.note || (c ? c.name : t("Sonstiges")))}</b><small>${esc(e.note && c ? `${c.name} · ` : "")}${esc(dayLabel(e.date))}</small></span>
+    <span class="grow"><b>${esc(e.note || (c ? c.name : t("Sonstiges")))}</b><small>${esc(e.note && c ? `${c.name} · ` : "")}${esc(dayLabel(e.date))}${L.budgetMonth(e, S) !== L.monthOf(e.date) ? ` · ${esc(t("zählt für {m}", { m: monthName(L.budgetMonth(e, S)) }))}` : ""}</small></span>
     <b class="amt ${e.amount_cents > 0 ? "pos" : ""}">${e.amount_cents > 0 ? "+" : ""}${fmt(e.amount_cents)}</b></button>`;
 }
 
@@ -224,7 +224,9 @@ function viewSettings() {
     ${seg("mode", S.settings.daily_mode === "spread" ? "spread" : "pot", [["pot", t("Topf")], ["spread", t("Neu verteilt")]])}
     <p class="meta">${t("Topf: jeden Tag kommt ein fester Betrag dazu, was du nicht ausgibst, bleibt drin. Neu verteilt: das Übrige wird jeden Tag auf die restlichen Tage aufgeteilt.")}</p>
     <label class="field"><span>${t("Große Ausgaben ab")}</span><input type="text" inputmode="decimal" id="s-large" value="${(S.settings.large_cents / 100).toLocaleString(LOCALE)}">
-      <small class="meta">${t("Werden in der Prognose nicht hochgerechnet.")}</small></label></section>
+      <small class="meta">${t("Werden in der Prognose nicht hochgerechnet.")}</small></label>
+    <label class="field"><span>${t("Folgemonat ab dem")}</span><input type="number" inputmode="numeric" min="1" max="31" id="s-shift" value="${S.settings.shift_day ?? 15}">
+      <small class="meta">${t("Einnahmen aus Kategorien mit „Folgemonat“ (Gehalt, Nebenjob) zählen ab diesem Tag für den nächsten Monat.")}</small></label></section>
   <section class="card"><div class="card-head"><h2>${t("Kategorien")}</h2></div>
     <div class="cat-list">${S.categories.map((c) => `<button class="chip" data-cat="${esc(c.id)}"><span class="bubble sm ${hue(c)}">${icon(c.icon)}</span>${esc(c.name)}${c.kind === "income" ? " <small>+</small>" : ""}</button>`).join("")}</div>
     <button class="btn secondary block" data-action="cat-new">${icon("plus")}${t("Kategorie hinzufügen")}</button></section>
@@ -262,7 +264,10 @@ function openEntrySheet(kind, entry = null) {
   const render = () => {
     sheet.querySelectorAll("[data-sign]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.sign === sign));
     const v = L.parseAmount(amount || "0") || 0;
-    $("#e-amount", sheet).innerHTML = `<span class="${sign === "income" ? "pos" : ""}">${sign === "income" ? "+" : "−"}${esc(amount ? amount : "0")} €</span>`;
+    const date = $("#e-date", sheet).value || todayIso();
+    const bm = L.budgetMonth({ date, amount_cents: sign === "income" ? 1 : -1, category_id: catId }, S);
+    $("#e-amount", sheet).innerHTML = `<span class="${sign === "income" ? "pos" : ""}">${sign === "income" ? "+" : "−"}${esc(amount ? amount : "0")} €</span>`
+      + (bm !== L.monthOf(date) ? `<small class="shift-note">${icon("clock")}${t("zählt für {m}", { m: monthName(bm) })}</small>` : "");
     $("#e-amount", sheet).setAttribute("aria-label", fmt(v));
     const cats = S.categories.filter((c) => c.kind === sign);
     if (catId && !cats.some((c) => c.id === catId)) catId = null;
@@ -270,6 +275,7 @@ function openEntrySheet(kind, entry = null) {
       <span class="bubble ${hue(c)}">${icon(c.icon)}</span><small>${esc(c.name)}</small></button>`).join("");
   };
   render();
+  $("#e-date", sheet).addEventListener("change", render);
   sheet.addEventListener("click", (e) => {
     const sb = e.target.closest("[data-sign]");
     if (sb) { sign = sb.dataset.sign; render(); return; }
@@ -367,11 +373,14 @@ function openCategorySheet(cat = null) {
   const sheet = openSheet(`<h3>${t("Kategorie")}</h3>
     <div class="seg" role="group">${["expense", "income"].map((k) => `<button data-ckind="${k}">${t(k === "income" ? "Einnahme" : "Ausgabe")}</button>`).join("")}</div>
     <label class="field"><span>${t("Name")}</span><input type="text" id="k-name" maxlength="40" value="${esc(cat ? cat.name : "")}"></label>
-    <div class="field"><span>${t("Symbol")}</span><div class="icon-pick">${CATEGORY_ICON_CHOICES.map((i) => `<button data-icon="${i}" aria-label="${i}">${icon(i)}</button>`).join("")}</div></div>`, {
+    <div class="field"><span>${t("Symbol")}</span><div class="icon-pick">${CATEGORY_ICON_CHOICES.map((i) => `<button data-icon="${i}" aria-label="${i}">${icon(i)}</button>`).join("")}</div></div>
+    <label class="check" id="k-nextwrap"><input type="checkbox" id="k-next" ${cat && cat.next_month ? "checked" : ""}> ${t("Zählt zum Folgemonat")}</label>
+    <p class="meta" id="k-nexthint">${t("Kommt die Einnahme ab dem {d}. des Monats (z. B. Gehalt Ende Oktober), zählt sie für den nächsten Monat. Den Tag stellst du unter „Tagesbudget“ ein.", { d: S.settings.shift_day ?? 15 })}</p>`, {
     actions: `${cat ? `<button class="btn secondary danger-text icon-only" id="k-del" aria-label="${t("Löschen")}">${icon("trash")}</button>` : ""}<button class="btn" id="k-save">${t("Speichern")}</button>` });
   const mark = () => {
     sheet.querySelectorAll("[data-icon]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.icon === chosen));
     sheet.querySelectorAll("[data-ckind]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.ckind === kind));
+    $("#k-nextwrap", sheet).hidden = $("#k-nexthint", sheet).hidden = kind !== "income";
   };
   mark();
   sheet.addEventListener("click", (e) => {
@@ -393,8 +402,9 @@ function openCategorySheet(cat = null) {
     const name = $("#k-name", sheet).value.trim();
     if (!name) { toast(t("Bitte einen Namen eingeben.")); return; }
     if (!lockSave(sheet)) return;
-    if (cat) Object.assign(S.categories.find((c) => c.id === cat.id), { name, icon: chosen, kind });
-    else S.categories.push({ id: uid(), name, icon: chosen, kind });
+    const next_month = kind === "income" && $("#k-next", sheet).checked;
+    if (cat) Object.assign(S.categories.find((c) => c.id === cat.id), { name, icon: chosen, kind, next_month });
+    else S.categories.push({ id: uid(), name, icon: chosen, kind, next_month });
     save().then(() => { closeSheet(); toast(t("Gespeichert")); render_(); });
   });
 }
@@ -497,6 +507,12 @@ document.addEventListener("click", async (e) => {
 });
 document.addEventListener("change", async (e) => {
   if (e.target.id === "restore") return restoreFrom(e.target);
+  if (e.target.id === "s-shift") {
+    const d = Math.round(Number(e.target.value));
+    if (d >= 1 && d <= 31) { S.settings.shift_day = d; await save(); toast(t("Gespeichert")); render_(); }
+    else e.target.value = S.settings.shift_day ?? 15;
+    return;
+  }
   if (e.target.id === "s-large") {
     const v = L.parseAmount(e.target.value);
     if (v && v > 0) { S.settings.large_cents = v; await save(); toast(t("Gespeichert")); }
@@ -539,6 +555,11 @@ function initBackButton() {
 async function start() {
   document.documentElement.lang = LANG;
   S = (await Store.load()) || defaultState();
+  // Ab 1.3.0: Gehalt und Nebenjob zählen zum Folgemonat. Ältere Daten (noch ohne Stichtag) einmalig umstellen.
+  if (S.settings && S.settings.shift_day == null && Array.isArray(S.categories)) {
+    const auto = ["gehalt", "nebenjob", "lohn", "salary", "side job"];
+    S.categories.forEach((c) => { if (c.kind === "income" && auto.includes(String(c.name).trim().toLowerCase())) c.next_month = true; });
+  }
   S = { ...defaultState(), ...S, settings: { ...defaultState().settings, ...(S.settings || {}) } };
   await save();
   Store.persist();

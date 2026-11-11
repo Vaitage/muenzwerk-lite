@@ -97,3 +97,17 @@ test("Fixkosten mit Kategorie zählen unter „Nach Kategorie“ mit", () => {
   assert.deepEqual(r.categories, [{ id: "home", total: 105000 }]);
   assert.equal(r.fixedCosts, 102000);
 });
+
+test("Gehalt/Nebenjob ab dem Stichtag zählen zum Folgemonat", () => {
+  const s = { settings: { shift_day: 15 }, fixed: [],
+    categories: [{ id: "g", kind: "income", next_month: true }, { id: "x", kind: "income" }],
+    entries: [
+      { id: "1", date: "2026-10-28", amount_cents: 52000, category_id: "g" },   // → November
+      { id: "2", date: "2026-10-10", amount_cents: 10000, category_id: "g" },   // vor Stichtag → Oktober
+      { id: "3", date: "2026-10-28", amount_cents: 3000, category_id: "x" },    // ohne Folgemonat → Oktober
+      { id: "4", date: "2026-12-20", amount_cents: 1000, category_id: "g" },    // Dezember → Januar (Jahreswechsel)
+    ] };
+  assert.equal(L.budgetMonth(s.entries[3], s), "2027-01");
+  assert.equal(L.month(s, "2026-10", "2026-11-11").incomeVariable, 13000);
+  assert.equal(L.month(s, "2026-11", "2026-11-11").incomeVariable, 52000);
+});
