@@ -31,6 +31,7 @@ Prefer the old way? *Settings → Daily budget → Spread* divides what's left o
 - Overview: available today, the next three days, the month at a glance (income, fixed costs, savings, spent, left)
 - Entries by day, edit or delete with a tap
 - Statistics per month: daily amount, regular/variable income, fixed/variable/large expenses, savings, budget left, forecast, spending by category
+- **Savings goals** with amount and period: the rate is planned into your daily budget; the card says whether you are on track, should keep an eye on it, or the goal is at risk
 - Your own categories and icons
 - German and English, light and dark
 - **Backup as a file** (Settings → Backup) – save it to your cloud storage; restore it on a new phone

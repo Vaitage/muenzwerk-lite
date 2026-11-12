@@ -22,6 +22,10 @@ savings) are kept as a list, the daily budget is a "pot". Data lives only on the
 - Next month (1.3.0): income categories with `next_month` (default: salary, side job) count for the next month when
   the entry's day ≥ `settings.shift_day` (default 15) – `L.budgetMonth(entry, state)`, like Münzwerk. Fixed items are
   not shifted. Old data without `shift_day` gets `next_month` on categories named Gehalt/Nebenjob/Lohn once.
+- Savings goals (1.4.0, `L.goals(state, today)`, same rules as Münzwerk 1.30): rate per day in the period, the
+  current month's rate is deducted in `L.month` (`goalRate`; `{ noGoals: true }` for the raw month). Past months count
+  what was left, at most the rate. Status ok / watch / late (late = needed rate > average left of the last ≤3 months
+  with entries; no history → never late). Card on the overview (`goalsCard`), add/edit in settings or on the card.
 - Large expenses (≥ `settings.large_cents`, default €250) count fully but are not extrapolated in the forecast.
 
 ## Workflow

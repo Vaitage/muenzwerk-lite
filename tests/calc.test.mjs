@@ -111,3 +111,59 @@ test("Gehalt/Nebenjob ab dem Stichtag zählen zum Folgemonat", () => {
   assert.equal(L.month(s, "2026-10", "2026-11-11").incomeVariable, 13000);
   assert.equal(L.month(s, "2026-11", "2026-11-11").incomeVariable, 52000);
 });
+
+// Sparziele: Monat mit 2.000 € Einnahmen, 1.200 € Fixkosten → 800 € frei
+const goalBase = (entries = [], goals = []) => ({
+  settings: { daily_mode: "pot" }, categories: [],
+  fixed: [{ id: "g", name: "Gehalt", kind: "income", amount_cents: 200000, day: 1 },
+          { id: "m", name: "Miete", kind: "expense", amount_cents: 120000, day: 1 }],
+  entries, goals,
+});
+
+test("Sparziel: Rate taggenau, zieht Übrig und Tagesbudget herunter", () => {
+  const g = { id: "z", name: "Handy", target_cents: 150000, start_cents: 0, start_date: "2026-11-12", end_date: "2028-09-01" };
+  const s = goalBase([], [g]);
+  const rep = L.goals(s, "2026-11-12");
+  const x = rep.goals[0];
+  // 12.11.2026–1.9.2028 = 660 Tage, davon 19 im November
+  assert.equal(x.rate, Math.ceil((150000 * 19) / 660));
+  assert.equal(rep.planned, x.rate);
+  const r = L.month(s, "2026-11", "2026-11-12");
+  assert.equal(r.goalRate, x.rate);
+  assert.equal(r.budget, 80000 - x.rate);
+  assert.equal(L.month(s, "2026-11", "2026-11-12", { noGoals: true }).budget, 80000);
+  assert.equal(x.status, "ok");                  // keine Vormonate → nur „Geld jetzt da?“
+});
+
+test("Sparziel-Bewertung: im Plan trotz knapper Prognose, im Blick, gefährdet", () => {
+  const g = { id: "z", name: "Handy", target_cents: 150000, start_cents: 0, start_date: "2026-11-01", end_date: "2028-09-01" };
+  // Oktober: 300 € ausgegeben → 500 € übrig (Schnitt); November bis zum 12.: 450 € ausgegeben
+  const oct = [{ id: "o", date: "2026-10-05", amount_cents: -30000 }];
+  const nov = [{ id: "n", date: "2026-11-03", amount_cents: -20000 }, { id: "n2", date: "2026-11-10", amount_cents: -20000 }];
+  const s = goalBase([...oct, ...nov], [g]);
+  const a = L.goals(s, "2026-11-12").goals[0];
+  assert.equal(a.monthOk, true);                 // 400 € noch da, Rate ~68 €
+  assert.equal(a.forecastOk, false);             // Tempo 36 €/Tag → Ende November im Minus
+  assert.equal(a.status, "ok");
+  assert.ok(a.needIfNone > a.needNext);
+  // November schon ausgegeben → im Blick, Ziel weiter schaffbar
+  const s2 = goalBase([...oct, { id: "big", date: "2026-11-05", amount_cents: -80000 }], [g]);
+  const b = L.goals(s2, "2026-11-12").goals[0];
+  assert.equal(b.coverNow, 0);
+  assert.equal(b.status, "watch");
+  // viel zu großes Ziel für den üblichen Überschuss → gefährdet
+  const s3 = goalBase(oct, [{ ...g, target_cents: 5000000, end_date: "2027-03-31" }]);
+  const c = L.goals(s3, "2026-11-12");
+  assert.equal(c.goals[0].status, "late");
+  assert.equal(c.avgSurplus, 50000);
+  assert.ok(c.goals[0].needNext > 50000);
+});
+
+test("Sparziel: fürs Ziel zählt höchstens die Rate, Minus-Monat zieht ab", () => {
+  const g = { id: "z", name: "Urlaub", target_cents: 60000, start_cents: 0, start_date: "2026-09-01", end_date: "2026-12-31" };
+  const s = goalBase([{ id: "x", date: "2026-10-04", amount_cents: -100000 }], [g]);  // Oktober −200 €
+  const x = L.goals(s, "2026-11-12").goals[0];
+  const sep = Math.ceil((60000 * 30) / 122);                 // September: 30 von 122 Tagen
+  assert.deepEqual(x.history.map((h) => h.credit), [sep, -sep]);
+  assert.equal(x.saved, 0);
+});

@@ -31,6 +31,7 @@ Lieber anders? *Einstellungen → Tagesbudget → Neu verteilt* teilt das Übrig
 - Übersicht: heute verfügbar, die nächsten drei Tage, der Monat auf einen Blick (Einnahmen, Fixkosten, Sparen, ausgegeben, übrig)
 - Buchungen nach Tagen, antippen zum Ändern oder Löschen
 - Statistik je Monat: Tagessatz, regelmäßige/variable Einnahmen, feste/variable/große Ausgaben, Sparen, Budget übrig, Prognose, Ausgaben nach Kategorie
+- **Sparziele** mit Betrag und Zeitraum: die Rate wird im Tagesbudget eingeplant; die Karte zeigt, ob du im Plan bist, es im Blick behalten solltest oder das Ziel gefährdet ist
 - Eigene Kategorien und Symbole
 - Deutsch und Englisch, hell und dunkel
 - **Sicherung als Datei** (Einstellungen → Sicherung) – z. B. in deinem Cloud-Speicher ablegen und auf einem neuen Handy wieder laden

@@ -1,7 +1,7 @@
 // Münzwerk Lite – Oberfläche. Alles läuft im Browser, Daten über Store (IndexedDB) auf dem Gerät.
 "use strict";
 
-const APP_VERSION = "1.3.0";
+const APP_VERSION = "1.4.0";
 const $ = (sel, root = document) => root.querySelector(sel);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const money = new Intl.NumberFormat(LOCALE, { style: "currency", currency: "EUR" });
@@ -36,6 +36,7 @@ function defaultState() {
     ],
     entries: [],
     fixed: [],
+    goals: [],
     settings: { daily_mode: "pot", large_cents: 25000, shift_day: 15, last_backup: null, onboarded: false },
   };
 }
@@ -121,22 +122,24 @@ function viewOverview() {
       <span>${esc(dayLabel(p.iso))}</span><b class="${p.available < 0 ? "neg" : ""}">${i === 0 ? fmt(p.available) : fmt0(p.available)}</b></div>`).join("")}</div>`;
   }
   // Monat im Überblick
-  const scale = Math.max(r.income, r.fixedCosts + r.savings + r.spent, 1);
+  const scale = Math.max(r.income, r.fixedCosts + r.savings + r.goalRate + r.spent, 1);
   const w = (c) => `${Math.max(0, (c / scale) * 100).toFixed(2)}%`;
   html += `<section class="card month">
     <h2>${esc(monthName(m))}</h2>
     <div class="flow" role="img" aria-label="${esc(`${t("Einnahmen")} ${fmt0(r.income)}, ${t("Fixkosten")} ${fmt0(r.fixedCosts)}, ${t("Sparen")} ${fmt0(r.savings)}, ${t("Ausgaben bisher")} ${fmt0(r.spent)}`)}">
       <div class="track"><i class="inc" style="width:${w(r.income)}"></i></div>
-      <div class="track"><i class="fix" style="width:${w(r.fixedCosts)}"></i><i class="sav" style="width:${w(r.savings)}"></i><i class="var" style="width:${w(r.spent)}"></i></div>
+      <div class="track"><i class="fix" style="width:${w(r.fixedCosts)}"></i><i class="sav" style="width:${w(r.savings)}"></i><i class="goal" style="width:${w(r.goalRate)}"></i><i class="var" style="width:${w(r.spent)}"></i></div>
     </div>
     <div class="rows">
       <div class="row"><span><i class="dot inc"></i>${t("Einnahmen")}</span><b class="pos">${fmt(r.income)}</b></div>
       <div class="row"><span><i class="dot fix"></i>${t("Fixkosten")}</span><b>${fmt(-r.fixedCosts)}</b></div>
       <div class="row"><span><i class="dot sav"></i>${t("Sparen")}</span><b>${fmt(-r.savings)}</b></div>
+      ${r.goalRate ? `<div class="row"><span><i class="dot goal"></i>${t("Sparziele (eingeplant)")}</span><b>${fmt(-r.goalRate)}</b></div>` : ""}
       <div class="row"><span><i class="dot var"></i>${t("Ausgaben bisher")}</span><b>${fmt(-r.spent)}</b></div>
       <div class="row total"><span>${t("Übrig bis Monatsende")}</span><b class="${r.left < 0 ? "neg" : "pos"}">${fmt(r.left)}</b></div>
     </div>
   </section>`;
+  html += goalsCard();
   // Letzte Einträge
   const recent = [...S.entries].sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id)).slice(0, 5);
   html += `<section class="card"><div class="card-head"><h2>${t("Letzte Einträge")}</h2>${recent.length ? `<button class="link" data-tab="entries">${t("Alle ansehen")}</button>` : ""}</div>
@@ -227,6 +230,10 @@ function viewSettings() {
       <small class="meta">${t("Werden in der Prognose nicht hochgerechnet.")}</small></label>
     <label class="field"><span>${t("Folgemonat ab dem")}</span><input type="number" inputmode="numeric" min="1" max="31" id="s-shift" value="${S.settings.shift_day ?? 15}">
       <small class="meta">${t("Einnahmen aus Kategorien mit „Folgemonat“ (Gehalt, Nebenjob) zählen ab diesem Tag für den nächsten Monat.")}</small></label></section>
+  <section class="card"><h2>${t("Sparziele")}</h2>
+    <p class="meta">${t("Lege ein Ziel mit Betrag und Zeitraum an. Die Rate wird in deinem Tagesbudget eingeplant; das Geld bleibt, wo es ist.")}</p>
+    ${(S.goals || []).length ? `<div class="cat-list">${S.goals.map((g) => `<button class="chip" data-goal="${esc(g.id)}"><span class="bubble sm hue5">${icon(g.icon || "piggy")}</span>${esc(g.name)}</button>`).join("")}</div>` : ""}
+    <button class="btn secondary block" data-action="goal-new">${icon("plus")}${t("Sparziel anlegen")}</button></section>
   <section class="card"><div class="card-head"><h2>${t("Kategorien")}</h2></div>
     <div class="cat-list">${S.categories.map((c) => `<button class="chip" data-cat="${esc(c.id)}"><span class="bubble sm ${hue(c)}">${icon(c.icon)}</span>${esc(c.name)}${c.kind === "income" ? " <small>+</small>" : ""}</button>`).join("")}</div>
     <button class="btn secondary block" data-action="cat-new">${icon("plus")}${t("Kategorie hinzufügen")}</button></section>
@@ -409,6 +416,161 @@ function openCategorySheet(cat = null) {
   });
 }
 
+// ------------------------------------------------------------------ Sparziele
+const shortMonth = (m) => new Date(+m.slice(0, 4), +m.slice(5, 7) - 1, 1).toLocaleDateString(LOCALE, { month: "short" }).replace(".", "");
+const dateNum = (iso) => new Date(iso + "T12:00:00").toLocaleDateString(LOCALE);
+const GOAL_ICONS = ["piggy", "phone", "laptop", "car", "plane", "home", "gift", "graduation", "heart", "sparkle"];
+const pathSvg = (d) => `<svg viewBox="0 0 24 24" aria-hidden="true">${d}</svg>`;
+const GOAL_CHECK = '<path d="m5 12 5 5 9-10"/>';
+const GOAL_FLAG = '<path d="M5 21V4h11l-2 4 2 4H5"/>';
+
+// Im Plan = Rate diesen Monat drin + Ziel schaffbar; Im Blick = diesen Monat reicht es nicht, Ziel aber schaffbar;
+// Gefährdet = nötige Rate höher als das, was sonst im Monat übrig bleibt
+function goalPill(g) {
+  if (g.status === "reached") return ["ok", t("Erreicht")];
+  if (g.status === "late") return ["bad", t("Gefährdet")];
+  if (g.status === "watch") return ["warn", t("Im Blick")];
+  return ["ok", t("Im Plan")];
+}
+
+function goalNote(g, rep) {
+  const gl = g.goal, cur = thisMonth();
+  const month = monthName(cur).split(" ")[0];
+  const next = monthName(L.addMonths(cur, 1)).split(" ")[0];
+  const endLabel = monthName(L.monthOf(gl.end_date));
+  const b = (x) => `<b>${x}</b>`;
+  if (g.status === "reached" || !g.rate && g.status !== "late") return ["", ""];
+  if (g.status === "late") {
+    const need = g.needNext || Math.max(0, gl.target_cents - g.saved);
+    let s = rep.avgSurplus > 0
+      ? t("Bis {end} bräuchtest du jetzt {need} im Monat – in den letzten Monaten blieben dir im Schnitt nur {avg} übrig.", { end: endLabel, need: b(fmt0(need)), avg: b(fmt0(rep.avgSurplus)) })
+      : t("Bis {end} bräuchtest du jetzt {need} im Monat – in den letzten Monaten blieb dir im Schnitt nichts übrig.", { end: endLabel, need: b(fmt0(need)) });
+    s += " " + (g.reach ? t("Mit diesem Tempo erreichst du das Ziel etwa im {month}.", { month: b(monthName(g.reach)) }) : t("Mit diesem Tempo erreichst du das Ziel so nicht."));
+    return ["bad", s];
+  }
+  if (!g.monthOk) {
+    let s = g.coverNow > 0
+      ? t("Diesen Monat sind nur noch {part} statt {rate} fürs Ziel übrig.", { part: b(fmt0(g.coverNow)), rate: fmt0(g.rate) })
+      : t("Diesen Monat ist nichts fürs Ziel übrig.");
+    if (g.needNext) s += " " + t("Kein Problem: ab {month} {amount} im Monat, dann klappt es bis {end}.", { month: next, amount: b(fmt0(g.needNext)), end: endLabel });
+    return ["warn", s];
+  }
+  if (!g.forecastOk) {
+    let s = `<b>${t("Im Blick behalten:")}</b> ` + (rep.paceDaily > 0
+      ? t("Bei deinem bisherigen Tempo (ca. {pace} pro Tag) wird es Ende {month} knapp.", { pace: fmt0(rep.paceDaily), month })
+      : t("Laut Prognose wird es Ende {month} knapp.", { month }));
+    if (rep.tipDaily > 100) s += " " + t("Gibst du bis Monatsende höchstens {amount} pro Tag aus, sind die {rate} sicher.", { amount: b(fmt(Math.floor(rep.tipDaily / 100) * 100)), rate: fmt0(g.rate) });
+    if (g.needIfNone && g.needNext) s += " " + (g.feasibleIfNone
+      ? t("Klappt es nicht, ist das Ziel nicht in Gefahr – ab {month} wären es dann {more} statt {amount} im Monat.", { month: next, more: b(fmt0(g.needIfNone)), amount: fmt0(g.needNext) })
+      : t("Klappt es nicht, wird es fürs Ziel eng – ab {month} wären es dann {more} statt {amount} im Monat.", { month: next, more: b(fmt0(g.needIfNone)), amount: fmt0(g.needNext) }));
+    return ["warn", s];
+  }
+  return ["ok", t("Läuft – die {rate} sind diesen Monat drin.", { rate: b(fmt0(g.rate)) })];
+}
+
+function goalPath(g, warn) {
+  const gl = g.goal, cur = thisMonth(), nodes = [];
+  for (const h of g.history) {
+    const full = h.rate > 0 && h.credit >= h.rate;
+    nodes.push({ cls: full ? "done" : "part", icon: full ? GOAL_CHECK : "", label: shortMonth(h.month), sub: fmt0(Math.max(0, h.credit)) });
+  }
+  nodes.push({ cls: warn ? "now warn" : "now", label: shortMonth(cur), sub: t("{amount} · läuft", { amount: fmt0(g.rate) }) });
+  const next = L.addMonths(cur, 1), last = L.monthOf(gl.end_date);
+  if (next <= last && g.needNext) nodes.push({ cls: "later", label: next === last ? shortMonth(next) : `${shortMonth(next)} – ${shortMonth(last)}`, sub: next === last ? fmt0(g.needNext) : t("je {amount}", { amount: fmt0(g.needNext) }) });
+  nodes.push({ cls: "goal", icon: GOAL_FLAG, label: t("Ziel"), sub: fmt0(gl.target_cents) });
+  return `<ol class="goal-path">${nodes.map((n) => `<li class="${n.cls}"><span class="dot">${n.icon ? pathSvg(n.icon) : ""}</span><b>${esc(n.label)}</b><small>${esc(n.sub)}</small></li>`).join("")}</ol>`;
+}
+
+function goalRow(g, rep) {
+  const gl = g.goal, reached = g.status === "reached";
+  const pct = (c) => Math.max(0, Math.min(100, (c / gl.target_cents) * 100));
+  const [pillCls, pillText] = goalPill(g);
+  const [level, note] = goalNote(g, rep);
+  const month = monthName(thisMonth()).split(" ")[0];
+  return `<div class="goal">
+    <button class="goal-head" data-goal="${esc(gl.id)}" aria-label="${esc(t("Sparziel bearbeiten: {name}", { name: gl.name }))}">
+      <span class="bubble hue5">${icon(gl.icon || "piggy")}</span>
+      <span class="grow"><b>${esc(gl.name)}</b><small>${esc(t("{amount} bis {date}", { amount: fmt0(gl.target_cents), date: dateNum(gl.end_date) }))}</small></span>
+      <span class="goal-pill ${pillCls}">${pillText}</span></button>
+    <div class="goal-amt"><b>${fmt0(g.saved)}</b>${reached ? "" : `<span>${t("noch {amount} bis zum Ziel", { amount: `<b>${fmt0(Math.max(0, gl.target_cents - g.saved))}</b>` })}</span>`}</div>
+    <div class="pbar" role="img" aria-label="${esc(t("{saved} von {target} gespart", { saved: fmt0(g.saved), target: fmt0(gl.target_cents) }))}">
+      <i style="width:${pct(g.saved)}%"></i>${reached ? "" : `<b style="left:${pct(g.plannedMonthEnd)}%"></b>`}</div>
+    <div class="goal-meta"><span>${t("{p} % gespart", { p: Math.round(pct(g.saved)) })}</span>
+      <span>${reached ? "" : t("Ende {month} sollten es {amount} sein", { month, amount: fmt0(g.plannedMonthEnd) })}</span></div>
+    ${!reached && g.rate > 0 ? `<div class="goal-task"><span class="sub">${t("Diesen Monat zur Seite legen")}</span>
+      <div><b>${fmt0(g.rate)}</b> <span class="sub">≈ ${t("{amount} pro Tag", { amount: fmt(Math.round(g.perDay)) })}</span></div>
+      <span class="sub">${t("Schon vom Tagesbudget abgezogen – du musst nichts überweisen.")}</span></div>` : ""}
+    ${note ? `<div class="goal-note ${level}">${icon(level === "ok" ? "check" : "alert")}<div>${note}</div></div>` : ""}
+    ${reached ? "" : goalPath(g, level !== "ok")}
+    <details class="goal-how"><summary>${t("Wie wird gerechnet?")}</summary>
+      <p>${t("Fürs Ziel zählt, was am Monatsende übrig bleibt – höchstens die Rate des Monats. Reicht es nicht, verteilt sich der Rest auf die übrigen Monate bis zum Enddatum. Die Rate ist schon vom Tagesbudget abgezogen.")}</p>
+      <p>${t("Im Plan: Das Geld für die Rate ist diesen Monat da. Im Blick: Diesen Monat reicht es nicht ganz, die Rate steigt dafür ab nächstem Monat etwas. Gefährdet: Die nötige Rate ist höher als das, was dir in den letzten Monaten im Schnitt übrig blieb.")}</p></details>
+  </div>`;
+}
+
+function goalsCard() {
+  if (!(S.goals || []).length) return "";
+  const rep = L.goals(S, todayIso());
+  return `<section class="card goals"><h2>${t("Sparziele")}</h2>${rep.goals.map((g) => goalRow(g, rep)).join("")}
+    <button class="btn secondary block" data-action="goal-new">${icon("plus")}${t("Sparziel anlegen")}</button></section>`;
+}
+
+const daysIncl = (a, b) => L.dayNo(b) - L.dayNo(a) + 1;
+function openGoalSheet(goal = null) {
+  let chosen = goal ? goal.icon || "piggy" : "piggy";
+  const today = todayIso();
+  const euros = (c) => (c ? (c / 100).toLocaleString(LOCALE) : "");
+  const sheet = openSheet(`<h3>${goal ? t("Sparziel bearbeiten") : t("Neues Sparziel")}</h3>
+    <label class="field"><span>${t("Name")}</span><input type="text" id="g-name" maxlength="40" placeholder="${t("z. B. Urlaub")}" value="${esc(goal ? goal.name : "")}"></label>
+    <div class="field-row">
+      <label class="field"><span>${t("Zielbetrag")}</span><input type="text" inputmode="decimal" id="g-target" placeholder="1.500" value="${euros(goal?.target_cents)}"></label>
+      <label class="field"><span>${t("Schon gespart")}</span><input type="text" inputmode="decimal" id="g-start" placeholder="0" value="${euros(goal?.start_cents)}"></label>
+    </div>
+    <div class="field-row">
+      <label class="field"><span>${t("Von")}</span><input type="date" id="g-from" value="${esc(goal ? goal.start_date : today)}"></label>
+      <label class="field"><span>${t("Bis")}</span><input type="date" id="g-to" value="${esc(goal ? goal.end_date : "")}"></label>
+    </div>
+    <p class="meta" id="g-calc" aria-live="polite"></p>
+    <div class="field"><span>${t("Symbol")}</span><div class="icon-pick">${GOAL_ICONS.map((i) => `<button data-gicon="${i}" aria-label="${i}">${icon(i)}</button>`).join("")}</div></div>`, {
+    actions: `${goal ? `<button class="btn secondary danger-text icon-only" id="g-del" aria-label="${t("Löschen")}">${icon("trash")}</button>` : ""}<button class="btn" id="g-save">${t("Speichern")}</button>` });
+  const read = () => ({
+    name: $("#g-name", sheet).value.trim(), target: L.parseAmount($("#g-target", sheet).value), start: L.parseAmount($("#g-start", sheet).value || "0") || 0,
+    from: $("#g-from", sheet).value, to: $("#g-to", sheet).value,
+  });
+  const calc = () => {
+    sheet.querySelectorAll("[data-gicon]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.gicon === chosen));
+    const v = read();
+    const el = $("#g-calc", sheet);
+    if (!v.target || !v.from || !v.to || v.to <= v.from) { el.textContent = t("Betrag und Zeitraum eintragen – dann siehst du, was pro Tag nötig ist."); return; }
+    const n = daysIncl(v.from, v.to), rest = Math.max(0, v.target - v.start);
+    el.innerHTML = t("{day} pro Tag · ca. {month} im Monat · {n} Tage", { day: `<b>${fmt(Math.ceil(rest / n))}</b>`, month: fmt0((rest / n) * 30.44), n });
+  };
+  calc();
+  sheet.addEventListener("input", calc);
+  sheet.addEventListener("click", (e) => {
+    const ib = e.target.closest("[data-gicon]");
+    if (ib) { chosen = ib.dataset.gicon; calc(); return; }
+    if (e.target.closest("#g-del")) {
+      confirmSheet(t("Sparziel löschen?"), t("Die Rate wird dann nicht mehr eingeplant."), t("Löschen"), async () => {
+        S.goals = S.goals.filter((x) => x.id !== goal.id);
+        await save(); toast(t("Gelöscht")); render_();
+      });
+      return;
+    }
+    if (!e.target.closest("#g-save")) return;
+    const v = read();
+    if (!v.name) { toast(t("Bitte einen Namen eingeben.")); return; }
+    if (!v.target) { toast(t("Bitte einen Betrag eingeben.")); return; }
+    if (!v.from || !v.to || v.to <= v.from) { toast(t("Das Enddatum muss nach dem Start liegen.")); return; }
+    if (!lockSave(sheet)) return;
+    const data = { name: v.name, icon: chosen, target_cents: v.target, start_cents: Math.min(v.start, v.target), start_date: v.from, end_date: v.to };
+    S.goals = S.goals || [];
+    if (goal) Object.assign(S.goals.find((x) => x.id === goal.id), data);
+    else S.goals.push({ id: uid(), ...data });
+    save().then(() => { closeSheet(); toast(t("Gespeichert")); render_(); });
+  });
+}
+
 // ------------------------------------------------------------------ Sicherung
 const backupDue = () => S.entries.length >= 10 && (!S.settings.last_backup || (Date.now() - Date.parse(S.settings.last_backup)) / 864e5 > 30);
 async function doBackup() {
@@ -483,6 +645,8 @@ document.addEventListener("click", async (e) => {
   if (fx) return openFixedSheet(S.fixed.find((x) => x.id === fx.dataset.fixed));
   const cb = e.target.closest("[data-cat]");
   if (cb) return openCategorySheet(catById(cb.dataset.cat));
+  const gb = e.target.closest("[data-goal]");
+  if (gb) return openGoalSheet((S.goals || []).find((x) => x.id === gb.dataset.goal));
   const md = e.target.closest("[data-mode]");
   if (md) { S.settings.daily_mode = md.dataset.mode; await save(); return render_(); }
   const lg = e.target.closest("[data-lang]");
@@ -494,6 +658,7 @@ document.addEventListener("click", async (e) => {
     case "add-income": return openEntrySheet("income");
     case "fixed-new": return openFixedSheet();
     case "cat-new": return openCategorySheet();
+    case "goal-new": return openGoalSheet();
     case "onboarded": S.settings.onboarded = true; await save(); return render_();
     case "backup": return doBackup();
     case "install":
